@@ -1,0 +1,27 @@
+name: CorePvP
+version: @version@
+main: rasuku59.kun.corepvp.CorePvP
+api-version: 1.16
+authors: [Rasuku59]
+description: KUN Application Plugin
+commands:
+  ct:
+    description: ok
+    usage: /<command> <red|blue> <join|kick>
+    default: op
+  randteam:
+    description: ok
+    usage: /<command> <join|kick>
+    default: op
+  setting:
+    description: ok
+    usage: /<command> <red|blue> <spawn|core>
+    default: op
+  start:
+    description: ok
+    usage: /<command>
+    default: op
+  end:
+    description: ok
+    usage: /<command>
+    default: op

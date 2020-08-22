@@ -1,0 +1,31 @@
+## 注意 数字以外を変更すると不具合が起こります
+
+## 1フェーズ当たりの時間（秒）
+time: 180
+## デフォルト time: 180
+
+## フェーズ数
+phase: 5
+## デフォルト phase: 5
+
+## カウントダウン（秒）
+countdown: 5
+
+##コアのHP
+coreHP: 100
+## デフォルト coreHP: 100
+
+## スイカの復活スピード
+revivalMelon: 5
+
+## オーク原木の復活スピード
+revivalOakWood: 5
+
+## 石炭鉱石の復活スピード
+revivalCoalOre: 7
+
+## 鉄鉱石の復活スピード
+revivalIronOre: 10
+
+## ダイヤモンド鉱石の復活スピード
+revivalDiamondOre: 20
