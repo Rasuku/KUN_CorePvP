@@ -27,5 +27,8 @@ revivalCoalOre: 7
 ## 鉄鉱石の復活スピード
 revivalIronOre: 10
 
+## 鉄鉱石の復活スピード
+revivalGoldOre: 15
+
 ## ダイヤモンド鉱石の復活スピード
 revivalDiamondOre: 20

@@ -8,6 +8,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
@@ -20,8 +22,6 @@ import java.util.Objects;
 public final class CorePvP extends JavaPlugin implements Listener {
 
     public static final String COMMAND_NAME = ChatColor.AQUA + "[CorePvP] ";
-
-    public static final String OBJECTIVE_NAME = "show_health";
 
     public static final String TEAM_RED = "red";
     public static final String TEAM_BLUE = "blue";
@@ -66,7 +66,7 @@ public final class CorePvP extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("setting")).setExecutor(new SettingCommand());
         Objects.requireNonNull(getCommand("start")).setExecutor(new StartCommand(this));
         Objects.requireNonNull(getCommand("end")).setExecutor(new EndCommand(this));
-        Objects.requireNonNull(getCommand("setweapon")).setExecutor(new SetWeaponCommand());
+        //Objects.requireNonNull(getCommand("setweapon")).setExecutor(new SetWeaponCommand());
 
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         Scoreboard board = Objects.requireNonNull(manager).getMainScoreboard();
@@ -123,6 +123,7 @@ public final class CorePvP extends JavaPlugin implements Listener {
     public void onRespawn(PlayerRespawnEvent event){
         Player player = event.getPlayer();
         PlayerData data = Data.getInstance().getPlayerData(player);
+        if(data.getTeam() == null) return;
         switch (data.getTeam()){
             case TEAM_RED:
                 event.setRespawnLocation(redSpawnPos);
@@ -138,70 +139,86 @@ public final class CorePvP extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         if (player.getGameMode() == GameMode.SURVIVAL) {
             event.setCancelled(true);
-        }
-        Block block = event.getBlock();
-        Location location = block.getLocation();
-        String team = null;
-        if(task.count != 1) {
-            if (redCorePos.getBlockX() == location.getBlockX() && redCorePos.getBlockY() == location.getBlockY() && redCorePos.getBlockZ() == location.getBlockZ()) {
-                redCoreHP--;
-                if (task.count == task.phase-1) {
+            Block block = event.getBlock();
+            Location location = block.getLocation();
+            String team = null;
+            if (task.count != 1) {
+                if (redCorePos.getBlockX() == location.getBlockX() && redCorePos.getBlockY() == location.getBlockY() && redCorePos.getBlockZ() == location.getBlockZ()) {
                     redCoreHP--;
-                }
-                team = TEAM_RED;
-            } else if (blueCorePos.getBlockX() == location.getBlockX() && blueCorePos.getBlockY() == location.getBlockY() && blueCorePos.getBlockZ() == location.getBlockZ()) {
-                blueCoreHP--;
-                if (task.count == task.phase-1) {
-                    blueCoreHP--;
-                }
-                team = TEAM_BLUE;
-            }
-
-            if (team != null) {
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    PlayerData data = Data.getInstance().getPlayerData(p);
-                    if (team.equals(TEAM_RED) && data.getTeam().equals(TEAM_RED)) {
-                        p.sendTitle("", "§eコアが削られています！", 5, 10, 5);
-                    } else if (team.equals(TEAM_BLUE) && data.getTeam().equals(TEAM_BLUE)) {
-                        p.sendTitle("", "§eコアが削られています！", 5, 10, 5);
+                    if (task.count == task.phase - 1) {
+                        redCoreHP--;
                     }
-
+                    team = TEAM_RED;
+                } else if (blueCorePos.getBlockX() == location.getBlockX() && blueCorePos.getBlockY() == location.getBlockY() && blueCorePos.getBlockZ() == location.getBlockZ()) {
+                    blueCoreHP--;
+                    if (task.count == task.phase - 1) {
+                        blueCoreHP--;
+                    }
+                    team = TEAM_BLUE;
                 }
-            }
-        }else{
-            player.sendMessage(CorePvP.COMMAND_NAME + "§eフェーズ2まではコアを破壊できません。");
-        }
 
-        if (task.count < 3 && block.getType() == Material.DIAMOND_ORE) {
-            player.sendMessage(CorePvP.COMMAND_NAME + "§eフェーズ3まではダイヤモンドを掘ることができません。");
-            return;
+                if (team != null) {
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        PlayerData data = Data.getInstance().getPlayerData(p);
+                        if (team.equals(TEAM_RED) && data.getTeam().equals(TEAM_RED)) {
+                            p.sendTitle("", "§eコアが削られています！", 5, 10, 5);
+                        } else if (team.equals(TEAM_BLUE) && data.getTeam().equals(TEAM_BLUE)) {
+                            p.sendTitle("", "§eコアが削られています！", 5, 10, 5);
+                        }
+
+                    }
+                }
+            } else {
+                player.sendMessage(CorePvP.COMMAND_NAME + "§eフェーズ2まではコアを破壊できません。");
+            }
+
+            if (task.count < 3 && block.getType() == Material.DIAMOND_ORE) {
+                player.sendMessage(CorePvP.COMMAND_NAME + "§eフェーズ3まではダイヤモンドを掘ることができません。");
+                return;
+            }
+            if (block.getType() == Material.MELON) {
+                new RevivalTask(block, Material.MELON).runTaskLater(this, config.getInt("revivalMelon") * 20);
+            } else if (block.getType() == Material.OAK_LOG) {
+                new RevivalTask(block, Material.OAK_LOG).runTaskLater(this, config.getInt("revivalOakWood") * 20);
+            } else if (block.getType() == Material.COAL_ORE) {
+                new RevivalTask(block, Material.COAL_ORE).runTaskLater(this, config.getInt("revivalCoalOre") * 20);
+            } else if (block.getType() == Material.IRON_ORE) {
+                new RevivalTask(block, Material.IRON_ORE).runTaskLater(this, config.getInt("revivalIronOre") * 20);
+            } else if (block.getType() == Material.GOLD_ORE) {
+                new RevivalTask(block, Material.GOLD_ORE).runTaskLater(this, config.getInt("revivalGoldOre") * 20);
+            } else if (block.getType() == Material.DIAMOND_ORE) {
+                new RevivalTask(block, Material.DIAMOND_ORE).runTaskLater(this, config.getInt("revivalDiamondOre") * 20);
+            } else {
+                return;
+            }
+            if (block.getType() == Material.MELON) {
+                ItemStack item = new ItemStack(Material.MELON_SLICE, 3);
+                player.getInventory().addItem(item);
+            } else {
+                player.getInventory().addItem(block.getDrops().toArray(new ItemStack[0]));
+            }
+            block.setType(Material.COBBLESTONE);
         }
-        if(block.getType() == Material.MELON){
-            new RevivalTask(block, Material.MELON).runTaskLater(this, config.getInt("revivalMelon") * 20);
-        }else if(block.getType() == Material.OAK_LOG){
-            new RevivalTask(block, Material.OAK_LOG).runTaskLater(this, config.getInt("revivalOakWood") * 20);
-        }else if (block.getType() == Material.COAL_ORE){
-            new RevivalTask(block, Material.COAL_ORE).runTaskLater(this, config.getInt("revivalCoalOre") * 20);
-        }else if(block.getType() == Material.IRON_ORE) {
-            new RevivalTask(block, Material.IRON_ORE).runTaskLater(this, config.getInt("revivalIronOre") * 20);
-        }else if (block.getType() == Material.DIAMOND_ORE) {
-            new RevivalTask(block, Material.DIAMOND_ORE).runTaskLater(this, config.getInt("revivalDiamondOre") * 20);
-        }else{
-            return;
-        }
-        if(block.getType() == Material.MELON){
-            ItemStack item = new ItemStack(Material.MELON_SLICE, 3);
-            player.getInventory().addItem(item);
-        }else{
-            player.getInventory().addItem(block.getDrops().toArray(new ItemStack[0]));
-        }
-        block.setType(Material.COBBLESTONE);
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event){
         Player player = event.getPlayer();
         if(player.getGameMode() == GameMode.SURVIVAL){
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent event){
+        Player player = event.getPlayer();
+        PlayerData data = Data.getInstance().getPlayerData(player);
+        if(data.getTeam() == null) return;
+        if(data.getTeam().equals(TEAM_RED)){
+            Bukkit.broadcastMessage("<§c"+player.getName()+"§r> "+event.getMessage());
+            event.setCancelled(true);
+        }else if (data.getTeam().equals(TEAM_BLUE)){
+            Bukkit.broadcastMessage("<"+ChatColor.BLUE+player.getName()+"§r> "+event.getMessage());
             event.setCancelled(true);
         }
     }

@@ -34,6 +34,31 @@ public class CountTask extends BukkitRunnable {
         this.time = 1.0/(second);
     }
 
+    public void cancel(){
+        super.cancel();
+
+        ScoreboardManager manager = Bukkit.getScoreboardManager();
+        Scoreboard board = Objects.requireNonNull(manager).getMainScoreboard();
+
+        Objects.requireNonNull(board.getObjective("Stats")).unregister();
+
+        Objective objective1 = board.getObjective("Stats");
+        if (objective1 == null){
+            objective1 = board.registerNewObjective("Stats", "dummy");
+            objective1.setDisplaySlot(DisplaySlot.SIDEBAR);
+            objective1.setDisplayName("§b§lCorePvP");
+        }
+        plugin.task = new CountTask(plugin);
+
+        plugin.bar.getBossBar().removeAll();
+        plugin.bar = new Bar();
+        plugin.bar.createBar();
+
+        int hp = CorePvP.config.getInt("coreHP");
+        plugin.redCoreHP = hp;
+        plugin.blueCoreHP = hp;
+    }
+
     @Override
     public void run() {
         if(countDown > 0){
